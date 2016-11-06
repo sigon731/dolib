@@ -28,10 +28,13 @@ export class View {
 		this.input = {};
 
 		listeners.set(this, e => {
+			console.log(e.button);
 			switch (e.type) {
-				case "mousedown":
-					if(e.target === this.canvas){
-						this.input.down = true;
+			case "mousedown":
+				if(e.target === this.canvas){
+					switch(e.button){
+					case 0:
+						this.input.left = true;
 
 						modifier.dispatch({
 							type: Action.POI,
@@ -41,31 +44,49 @@ export class View {
 							g: 0X62,
 							b: 0xF2
 						});
+						break;
+					case 1:
+						this.input.middle = true;
+						break;
+					case 2:
+						this.input.right = true;
+						break;
 					}
-					break;
-				case "mousemove":
-					if(this.input.down){
-						if(e.target === this.canvas){
-							modifier.dispatch({
-								type: Action.POI,
-								x: e.layerX / this.camera.zoom,
-								y: e.layerY / this.camera.zoom,
-								r: 0xF2,
-								g: 0X62,
-								b: 0x1E
-							});
-						}
-					}
-					break;
-				case "mouseup":
-					this.input.down = false;
-					break;
-				case "wheel":
+				}
+				break;
+			case "mousemove":
+				if(this.input.left){
 					if(e.target === this.canvas){
-						this.camera.zoom += (n => n < 0 ? -1 : (n > 0 ? 1 : n))(-e.deltaY);
-						this.flush();
+						modifier.dispatch({
+							type: Action.POI,
+							x: e.layerX / this.camera.zoom,
+							y: e.layerY / this.camera.zoom,
+							r: 0xF2,
+							g: 0X62,
+							b: 0x1E
+						});
 					}
+				}
+				break;
+			case "mouseup":
+				switch(e.button){
+				case 0:
+					this.input.left = false;
 					break;
+				case 1:
+					this.input.middle = false;
+					break;
+				case 2:
+					this.input.right = false;
+					break;
+				}
+				break;
+			case "wheel":
+				if(e.target === this.canvas){
+					this.camera.zoom += (n => n < 0 ? -1 : (n > 0 ? 1 : n))(-e.deltaY);
+					this.flush();
+				}
+				break;
 			}
 		});
 
