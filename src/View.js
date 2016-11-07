@@ -4,8 +4,6 @@ import { Camera } from "./Camera";
 
 import { getIndexByLocation } from "./Canvas";
 
-const listeners = new WeakMap();
-
 const events = [
 	"mousedown",
 	"mouseup",
@@ -25,9 +23,14 @@ export class View {
 
 		this.buffer = null;
 
-		this.input = {};
+		this.input = {
+			left: false,
+			middle: false,
+			right: false,
+			track: []
+		};
 
-		listeners.set(this, e => {
+		this.listener = e => {
 			console.log(e.button);
 			switch (e.type) {
 			case "mousedown":
@@ -36,6 +39,11 @@ export class View {
 					case 0:
 						this.input.left = true;
 
+						this.input.track.push({
+							x: e.layerX / this.camera.zoom,
+							y: e.layerY / this.camera.zoom
+						});
+						/*
 						modifier.dispatch({
 							type: Action.POI,
 							x: e.layerX / this.camera.zoom,
@@ -44,6 +52,7 @@ export class View {
 							g: 0X62,
 							b: 0xF2
 						});
+						*/
 						break;
 					case 1:
 						this.input.middle = true;
@@ -57,13 +66,9 @@ export class View {
 			case "mousemove":
 				if(this.input.left){
 					if(e.target === this.canvas){
-						modifier.dispatch({
-							type: Action.POI,
+						this.input.track.push({
 							x: e.layerX / this.camera.zoom,
-							y: e.layerY / this.camera.zoom,
-							r: 0xF2,
-							g: 0X62,
-							b: 0x1E
+							y: e.layerY / this.camera.zoom
 						});
 					}
 				}
@@ -72,6 +77,16 @@ export class View {
 				switch(e.button){
 				case 0:
 					this.input.left = false;
+
+					modifier.dispatch({
+						type: Action.DRAW,
+						pois: this.input.track,
+						r: 0xF2,
+						g: 0x53,
+						b: 0x1E
+					});
+
+					this.input.track = [];
 					break;
 				case 1:
 					this.input.middle = false;
@@ -88,12 +103,10 @@ export class View {
 				}
 				break;
 			}
-		});
-
-		const listener = listeners.get(this);
+		};
 
 		for(let type of events){
-			window.addEventListener(type, listener);
+			window.addEventListener(type, this.listener);
 		}
 	}
 	dispatch(action){
@@ -118,6 +131,58 @@ export class View {
 				this.context.fillStyle = `rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`;
 				console.log(`rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`);
 				this.context.fillRect((action.x | 0) * this.camera.zoom, (action.y | 0) * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+				break;
+			case Action.DRAW:
+				this.context.fillStyle = `rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`;
+
+				console.log("5", action.pois);
+
+				if(action.pois.length > 0){
+					action.pois.reduce((last, poi) => {
+						last.x = last.x | 0;
+						last.y = last.y | 0;
+						poi.x = poi.x | 0;
+						poi.y = poi.y | 0;
+
+						const dx = Math.abs(last.x - poi.x);
+						const dy = Math.abs(last.y - poi.y);
+
+						const sx = poi.x >= last.x ? 1 : -1;
+						const sy = poi.y >= last.y ? 1 : -1;
+
+						const slope = dy / dx || 0;
+
+						console.log("3", last, poi, dx, dy, slope);
+
+						if(dx > dy){
+							for(let i = 0; i < dx; i ++){
+								const x = last.x + sx * i;
+								const y = last.y + sy * i * slope | 0;
+
+								this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+							}
+						} else {
+							for(let i = 0; i < dy; i ++){
+								const x = last.x + sx * i / slope | 0;
+								const y = last.y + sy * i;
+
+								this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+							}
+						}
+						return poi;
+					});
+				}
+				/*
+				for(let poi of action.pois){
+					const index = getIndexByLocation(poi.x | 0, poi.y | 0, this.buffer.width, this.buffer.height);
+
+					this.buffer.data[index + 0] = action.r;
+					this.buffer.data[index + 1] = action.g;
+					this.buffer.data[index + 2] = action.b;
+					this.buffer.data[index + 3] = action.a || 0xFF;
+
+					this.context.fillRect((poi.x | 0) * this.camera.zoom, (poi.y | 0) * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+				}*/
 				break;
 		}
 	}

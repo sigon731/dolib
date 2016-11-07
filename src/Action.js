@@ -8,4 +8,4 @@ export const CLEAR_CANVAS = Symbol("clearCanvas");
 
 export const POI = Symbol("poi");
 
-export const SET_PIXELS = Symbol("setPixels");
+export const DRAW = Symbol("draw");
