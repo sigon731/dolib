@@ -12,11 +12,11 @@ export class Canvas {
 	}
 
 	setPixel(x, y, color) {
-		return this.setUnsafePixel(
-			(x <= 0 ? 0 : (x < this.width ? x : this.width)),
-			(y <= 0 ? 0 : (y < this.height ? y : this.height)),
-			color
-		);
+		if(x >= 0 && x < this.width && y >= 0 && y < this.height){
+			return this.setUnsafePixel(x | 0, y | 0, color);
+		} else {
+			return null;
+		}
 	}
 
 	setUnsafePixel(x, y, color) {
@@ -29,10 +29,11 @@ export class Canvas {
 	}
 
 	getPixel(x, y) {
-		return this.getUnsafePixel(
-			(x <= 0 ? 0 : (x < this.width ? x : this.width)),
-			(y <= 0 ? 0 : (y < this.height ? y : this.height))
-		);
+		if(x >= 0 && x < this.width && y >= 0 && y < this.height){
+			return this.getUnsafePixel(x | 0, y | 0);
+		} else {
+			return new Color(0, 0, 0, 0);
+		}
 	}
 
 	getUnsafePixel(x, y) {
@@ -44,8 +45,5 @@ export class Canvas {
 			this.data[index + 2],
 			this.data[index + 3]
 		);
-	}
-	getIndex(x, y){
-		return ((y <= 0 ? 0 : (y < this.height ? y : this.height)) * this.width + (x <= 0 ? 0 : (x < this.width ? x : this.width))) * 4;
 	}
 }
