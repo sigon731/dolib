@@ -1,9 +1,20 @@
 export class Color {
-	constructor(r, g, b, a = 255) {
-		this.r = r;
-		this.g = g;
-		this.b = b;
-		this.a = a;
+	constructor(r, g, b, a = 0xFF) {
+		if(typeof r === "object"){
+			if(r.hasOwnProperty("r") && r.hasOwnProperty("g") && r.hasOwnProperty("b")){
+				this.r = r.r;
+				this.g = r.g;
+				this.b = r.b;
+				this.a = r.a || 0xFF;
+			} else {
+				// ?
+			}
+		} else {
+			this.r = r;
+			this.g = g;
+			this.b = b;
+			this.a = a;
+		}
 	}
 
 	get24() {
@@ -18,7 +29,9 @@ export class Color {
 
 	getHsl() {  }
 
-	getRgba() {  }
+	getRgba() {
+		return `rgba(${this.r},${this.g},${this.b},${this.a / 0xFF})`;
+	}
 
 	getHsla() {  }
 }

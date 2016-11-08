@@ -2,7 +2,9 @@ import * as Action from "./Action";
 
 import { Camera } from "./Camera";
 
-import { getIndexByLocation } from "./Canvas";
+import { Canvas } from "./Canvas";
+
+import { Color } from "./Color";
 
 const events = [
 	"mousedown",
@@ -42,16 +44,6 @@ export class View {
 							x: e.layerX / this.camera.zoom,
 							y: e.layerY / this.camera.zoom
 						});
-						/*
-						modifier.dispatch({
-							type: Action.POI,
-							x: e.layerX / this.camera.zoom,
-							y: e.layerY / this.camera.zoom,
-							r: 0x1E,
-							g: 0X62,
-							b: 0xF2
-						});
-						*/
 						break;
 					case 1:
 						this.input.middle = true;
@@ -80,9 +72,11 @@ export class View {
 					modifier.dispatch({
 						type: Action.DRAW,
 						pois: this.input.track,
-						r: 0xF2,
-						g: 0x53,
-						b: 0x1E
+						color: {
+							r: 0xF2,
+							g: 0x53,
+							b: 0x1E
+						}
 					});
 
 					this.input.track = [];
@@ -113,83 +107,71 @@ export class View {
 
 		switch(action.type){
 			case Action.CREATE_CANVAS:
-				this.buffer = this.context.createImageData(action.width, action.height);
-				this.buffer.data.fill(0xFF);
+				this.buffer = new Canvas(action.width, action.height);
 
 				this.flush();
 				break;
 			case Action.POI:
-				const index = getIndexByLocation(action.x | 0, action.y | 0, this.buffer.width, this.buffer.height);
+				this.buffer.setPixel(action.x, action.y, action.color);
 
-				this.buffer.data[index + 0] = action.r;
-				this.buffer.data[index + 1] = action.g;
-				this.buffer.data[index + 2] = action.b;
-				this.buffer.data[index + 3] = action.a || 0xFF;
-
-				this.context.fillStyle = `rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`;
-				console.log(`rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`);
+				this.context.fillStyle = new Color(action.color).getRgba();
 				this.context.fillRect((action.x | 0) * this.camera.zoom, (action.y | 0) * this.camera.zoom, this.camera.zoom, this.camera.zoom);
 				break;
 			case Action.DRAW:
-				this.context.fillStyle = `rgba(${ action.r }, ${ action.g }, ${ action.b }, ${ action.a / 0xFF || 1 })`;
+				this.context.fillStyle = new Color(action.color).getRgba();
 
 				console.log("5", action.pois);
 
 				if(action.pois.length > 0){
 					action.pois.reduce((last, poi) => {
-						last.x = last.x | 0;
-						last.y = last.y | 0;
-						poi.x = poi.x | 0;
-						poi.y = poi.y | 0;
+						this.draw(last, poi, (x, y) => {
+							this.buffer.setPixel(x, y, action.color);
 
-						const dx = Math.abs(last.x - poi.x);
-						const dy = Math.abs(last.y - poi.y);
+							this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+						});
 
-						const sx = poi.x >= last.x ? 1 : -1;
-						const sy = poi.y >= last.y ? 1 : -1;
-
-						const slope = dy / dx || 0;
-
-						console.log("3", last, poi, dx, dy, slope);
-
-						if(dx > dy){
-							for(let i = 0; i < dx; i ++){
-								const x = last.x + sx * i;
-								const y = last.y + sy * i * slope | 0;
-
-								this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
-							}
-						} else {
-							for(let i = 0; i < dy; i ++){
-								const x = last.x + sx * i / slope | 0;
-								const y = last.y + sy * i;
-
-								this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
-							}
-						}
 						return poi;
 					});
 				}
-				/*
-				for(let poi of action.pois){
-					const index = getIndexByLocation(poi.x | 0, poi.y | 0, this.buffer.width, this.buffer.height);
-
-					this.buffer.data[index + 0] = action.r;
-					this.buffer.data[index + 1] = action.g;
-					this.buffer.data[index + 2] = action.b;
-					this.buffer.data[index + 3] = action.a || 0xFF;
-
-					this.context.fillRect((poi.x | 0) * this.camera.zoom, (poi.y | 0) * this.camera.zoom, this.camera.zoom, this.camera.zoom);
-				}*/
 				break;
+		}
+	}
+	draw(last, poi, next){
+		last.x = last.x | 0;
+		last.y = last.y | 0;
+		poi.x = poi.x | 0;
+		poi.y = poi.y | 0;
+
+		const dx = Math.abs(last.x - poi.x);
+		const dy = Math.abs(last.y - poi.y);
+
+		const sx = poi.x >= last.x ? 1 : -1;
+		const sy = poi.y >= last.y ? 1 : -1;
+
+		const slope = dy / dx || 0;
+
+		console.log("3", last, poi, dx, dy, slope);
+
+		if(dx > dy){
+			for(let i = 0; i < dx; i ++){
+				const x = last.x + sx * i;
+				const y = last.y + sy * i * slope | 0;
+
+				next(x, y);
+			}
+		} else {
+			for(let i = 0; i < dy; i ++){
+				const x = last.x + sx * i / slope | 0;
+				const y = last.y + sy * i;
+
+				next(x, y);
+			}
 		}
 	}
 	flush(init = "#453f3f"){
 		this.context.fillStyle = init;
 		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 		if(this.buffer){
-			this.context.fillStyle = "#FFF";
-			this.context.fillRect(0, 0, this.buffer.width * this.camera.zoom, this.buffer.height * this.camera.zoom);
 			for(let i = 0; i < this.buffer.data.length; i += 4){
 				const x = (i / 4 | 0) % this.buffer.width;
 				const y = (i / 4 | 0) / this.buffer.width | 0;

@@ -1,70 +1,51 @@
 import { Color } from "./Color";
 
-const props = new WeakMap();
-
 export class Canvas {
 	constructor(width, height) {
 		const data = new Uint8ClampedArray(width * height * 4);
 
 		data.fill(0xFF);
 
-		props.set(this, {
-			width,
-			height,
-			data
-		});
+		this.width = width;
+		this.height = height;
+		this.data = data;
 	}
 
 	setPixel(x, y, color) {
-		const { width, height } = props.get(this);
-
 		return this.setUnsafePixel(
-			(x <= 0 ? 0 : (x < width ? x : width)),
-			(y <= 0 ? 0 : (y < height ? y : height)),
+			(x <= 0 ? 0 : (x < this.width ? x : this.width)),
+			(y <= 0 ? 0 : (y < this.height ? y : this.height)),
 			color
 		);
 	}
 
 	setUnsafePixel(x, y, color) {
-		const { data, width } = props.get(this);
+		const index = (y * this.width + x) * 4;
 
-		const index = (y * width + x) * 4;
-
-		data[index + 0] = color.r;
-		data[index + 1] = color.g;
-		data[index + 2] = color.b;
-		data[index + 3] = color.a;
+		this.data[index + 0] = color.r;
+		this.data[index + 1] = color.g;
+		this.data[index + 2] = color.b;
+		this.data[index + 3] = color.a || 0xFF;
 	}
 
 	getPixel(x, y) {
-		const { width, height } = props.get(this);
-
 		return this.getUnsafePixel(
-			(x <= 0 ? 0 : (x < width ? x : width)),
-			(y <= 0 ? 0 : (y < height ? y : height))
+			(x <= 0 ? 0 : (x < this.width ? x : this.width)),
+			(y <= 0 ? 0 : (y < this.height ? y : this.height))
 		);
 	}
 
 	getUnsafePixel(x, y) {
-		const { data, width } = props.get(this);
-
-		const index = (y * width + x) * 4;
+		const index = (y * this.width + x) * 4;
 
 		return new Color(
-			data[index + 0],
-			data[index + 1],
-			data[index + 2],
-			data[index + 3]
+			this.data[index + 0],
+			this.data[index + 1],
+			this.data[index + 2],
+			this.data[index + 3]
 		);
 	}
-
-	get width(){
-		return props.get(this).width;
-	}
-
-	get height(){
-		return props.get(this).height;
+	getIndex(x, y){
+		return ((y <= 0 ? 0 : (y < this.height ? y : this.height)) * this.width + (x <= 0 ? 0 : (x < this.width ? x : this.width))) * 4;
 	}
 }
-
-export const getIndexByLocation = (x, y, width, height) => ((y <= 0 ? 0 : (y < height ? y : height)) * width + (x <= 0 ? 0 : (x < width ? x : width))) * 4;

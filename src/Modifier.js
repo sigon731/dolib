@@ -1,11 +1,7 @@
-import { Canvas } from "./Canvas";
-
 import * as Action from "./Action";
 
 export class Modifier {
 	constructor(){
-		this.canvas = null;
-
 		this.listeners = [];
 	}
 	subscribe(listener){
