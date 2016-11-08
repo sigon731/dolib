@@ -172,18 +172,12 @@ export class View {
 		this.context.fillStyle = init;
 		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 		if(this.buffer){
-			for(let i = 0; i < this.buffer.data.length; i += 4){
-				const x = (i / 4 | 0) % this.buffer.width;
-				const y = (i / 4 | 0) / this.buffer.width | 0;
+			for(let i = 0; i < this.buffer.width; i ++){
+				for(let j = 0; j < this.buffer.height; j ++){
+					this.context.fillStyle = this.buffer.getUnsafePixel(i, j).getRgba();
 
-				this.context.fillStyle = `rgba(
-					${this.buffer.data[i + 0]},
-					${this.buffer.data[i + 1]},
-					${this.buffer.data[i + 2]},
-					${this.buffer.data[i + 3]}
-				)`;
-
-				this.context.fillRect(x * this.camera.zoom, y * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+					this.context.fillRect(i * this.camera.zoom, j * this.camera.zoom, this.camera.zoom, this.camera.zoom);
+				}
 			}
 		}
 	}
