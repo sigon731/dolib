@@ -31,7 +31,6 @@ export class View {
 		};
 
 		this.listener = e => {
-			console.log(e.button);
 			switch (e.type) {
 			case "mousedown":
 				if(e.target === this.canvas){
@@ -117,8 +116,7 @@ export class View {
 				this.buffer = this.context.createImageData(action.width, action.height);
 				this.buffer.data.fill(0xFF);
 
-				this.context.fillStyle = "#FFF";
-				this.context.fillRect(0, 0, action.width * this.camera.zoom, action.height * this.camera.zoom);
+				this.flush();
 				break;
 			case Action.POI:
 				const index = getIndexByLocation(action.x | 0, action.y | 0, this.buffer.width, this.buffer.height);
